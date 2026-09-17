@@ -272,10 +272,21 @@ async function uploadCurrentQuotationToDrive(){
     const filename=ref+'-'+client+'.pdf';
     const pdfBlob=await buildQuotationPdfBlob();
     const base64=await blobToBase64(pdfBlob);
-    const response=await fetch(DRIVE_UPLOAD_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({filename,mimeType:'application/pdf',base64})});
-    const result=await response.json();
-    if(!result.ok) throw new Error(result.error||'Upload failed');
-    alert('Saved to Google Drive:\n'+filename);
+    /* Google Apps Script Web Apps can return an HTML redirect page to a
+       cross-origin browser request. Do not parse that page as JSON.
+       This follows the same reliable fire-and-send pattern as the working
+       quotation project: the POST is sent to Apps Script in no-cors mode. */
+    await fetch(DRIVE_UPLOAD_URL,{
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({
+        filename:filename,
+        mimeType:'application/pdf',
+        base64:base64
+      })
+    });
+    alert('PDF upload request sent to Google Drive:\n'+filename);
   }catch(err){console.error(err);alert('Google Drive upload failed: '+err.message);}
   finally{btn.disabled=false;btn.textContent=oldText;}
 }
