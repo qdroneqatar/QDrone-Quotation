@@ -355,7 +355,7 @@ async function uploadCurrentQuotationToDrive(){
     const nextRef=$('quoteNo').value;
     clearQuotationForNext();
     $('quoteNo').value=nextRef; update();
-    alert('PDF uploaded to Google Drive:\n'+filename+');
+    alert('PDF uploaded to Google Drive:\n'+filename+'\nNext shared reference: QDS-'+nextRef+'-'+yy);
   }catch(err){console.error(err);alert('Google Drive upload failed: '+err.message);}
   finally{btn.disabled=false;btn.textContent=oldText;}
 }
