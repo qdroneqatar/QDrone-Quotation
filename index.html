@@ -54,7 +54,7 @@ html,body{margin:0!important;padding:0!important;width:210mm!important;height:29
 <div class='card'><h3>Table Columns</h3><div class='checks' id='checks'></div></div>
 <div class='card'><h3>Items / Services</h3><div id='rows'></div><button class='add' id='addRow'>+ Add Row</button></div>
 <div class='card'><div class='toggleline'><h3 style='margin:0'>Terms & Conditions</h3><input type='checkbox' id='showTerms' checked></div><div class='text-size-control'><label>Preview Text Size</label><button type='button' class='sizebtn' data-size-target='terms' data-step='-1'>−</button><span id='termsSizeValue'>10 px</span><button type='button' class='sizebtn' data-size-target='terms' data-step='1'>+</button></div><div class='rich-toolbar'><button type='button' class='boldbtn' data-rich='terms' data-cmd='bold' title='Bold'>B</button><button type='button' class='colorbtn bluebtn' data-rich='terms' data-color='#1565c0' title='Blue text'>A</button><button type='button' class='colorbtn redbtn' data-rich='terms' data-color='#c62828' title='Red text'>A</button><button type='button' class='colorbtn greenbtn' data-rich='terms' data-color='#0b7b50' title='Green text'>A</button><button type='button' class='colorbtn brownbt' data-rich='terms' data-color='#795548' title='Brown text'>A</button><button type='button' class='blackbtn' data-rich='terms' data-color='#1a252d' title='Black text'>A</button></div><div id='terms' class='rich-editor' contenteditable='true'>1. This quotation is valid for the above mentioned period.<br>2. Prices are in QAR and exclusive of VAT (if applicable).<br>3. Any additional work or changes will be quoted separately.</div><div class='format-hint'>Select text, then use B or a color button.</div><div class='toggleline'><h3 style='margin:0'>Payment Terms</h3><input type='checkbox' id='showPayment' checked></div><div class='text-size-control'><label>Preview Text Size</label><button type='button' class='sizebtn' data-size-target='payment' data-step='-1'>−</button><span id='paymentSizeValue'>10 px</span><button type='button' class='sizebtn' data-size-target='payment' data-step='1'>+</button></div><div class='rich-toolbar'><button type='button' class='boldbtn' data-rich='payment' data-cmd='bold' title='Bold'>B</button><button type='button' class='colorbtn bluebtn' data-rich='payment' data-color='#1565c0' title='Blue text'>A</button><button type='button' class='colorbtn redbtn' data-rich='payment' data-color='#c62828' title='Red text'>A</button><button type='button' class='colorbtn greenbtn' data-rich='payment' data-color='#0b7b50' title='Green text'>A</button><button type='button' class='colorbtn brownbt' data-rich='payment' data-color='#795548' title='Brown text'>A</button><button type='button' class='blackbtn' data-rich='payment' data-color='#1a252d' title='Black text'>A</button></div><div id='payment' class='rich-editor' contenteditable='true'>Payment terms to be agreed with the client.</div><div class='format-hint'>Select text, then use B or a color button.</div></div>
-<div class='actions'><button class='btn secondary' id='reset'>Reset</button><button class='btn print' id='print'>Print as PDF</button><button class='btn save' id='uploadDrive'>Upload PDF to Drive</button></div></aside>
+<div class='actions'><button class='btn secondary' id='reset'>Reset</button><button class='btn save' id='uploadDrive'>Upload PDF to Drive</button><button class='btn print' id='print'>Print as PDF</button></div></aside>
 <main class='previewwrap'><section class='page' id='page'><img class='watermark' src='logowatermark.png' alt='' aria-hidden='true' onerror="this.style.display='none'"><div class='header'><div class='brand'><img class='logo' id='logo' src='logo.png' alt='Q Drone Services Logo' onerror="this.style.display='none'"></div><div class='company'><div class='company-name'>Q Drone Services</div><div class='detail'><svg class='contact-icon'><use href='#i-doc'/></svg><span><span class='detail-label'>CR:</span> 86978</span></div><div class='detail'><svg class='contact-icon'><use href='#i-pin'/></svg><span>Salwa Road, Doha, Qatar</span></div><div class='detail'><svg class='contact-icon'><use href='#i-phone'/></svg><span>+974 70002574</span></div><div class='detail'><svg class='contact-icon'><use href='#i-mail'/></svg><span>info@qdroneqatar.com</span></div></div></div>
 <div class='titlearea'><div><div class='qtitle'>Quotation</div></div><div class='qmeta'><div><span>Quotation No.</span><b class='qref' id='pQuoteNo'></b></div><div><span>Date</span><b id='pDate'></b></div><div><span>Valid Until</span><b id='pValid'></b></div></div></div>
 <div class='party'><div class='partybox'><h4>Quotation To</h4><p class='companyline' id='pClient'>Client / Company Name</p><div class='detail' id='clientCRLine'><svg class='contact-icon'><use href='#i-doc'/></svg><span id='pClientCR'>CR: —</span></div><div class='detail' id='clientLocationLine'><svg class='contact-icon'><use href='#i-pin'/></svg><span id='pClientLocation'>—</span></div><div class='detail' id='clientPhoneLine'><svg class='contact-icon'><use href='#i-phone'/></svg><span id='pClientPhone'>—</span></div><div class='detail' id='clientEmailLine'><svg class='contact-icon'><use href='#i-mail'/></svg><span id='pClientEmail'>—</span></div></div><div class='partybox'><h4>From</h4><p class='companyline'>Q Drone Services</p><div class='detail'><svg class='contact-icon'><use href='#i-doc'/></svg><span>CR: 86978</span></div><div class='detail'><svg class='contact-icon'><use href='#i-pin'/></svg><span>Salwa Road, Doha, Qatar</span></div><div class='detail'><svg class='contact-icon'><use href='#i-phone'/></svg><span>+974 70002574</span></div><div class='detail'><svg class='contact-icon'><use href='#i-mail'/></svg><span>info@qdroneqatar.com</span></div></div></div>
@@ -154,10 +154,11 @@ async function uploadCurrentQuotationToDrive(){
 
     const page=$('page');
     const opt={
-      margin:0,
+      margin:[0,0,0,0],
       filename:filename,
       image:{type:'jpeg',quality:0.98},
-      html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff'},
+      html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff',scrollX:0,scrollY:0},
+      pagebreak:{mode:['avoid-all','css','legacy']},
       jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
     };
 
@@ -180,7 +181,23 @@ async function uploadCurrentQuotationToDrive(){
         });
         img.src=dataUrl;
       }
-      const pdfBlob=await html2pdf().set(opt).from(page).outputPdf('blob');
+      const clone=page.cloneNode(true);
+      clone.style.position='fixed';
+      clone.style.left='-10000px';
+      clone.style.top='0';
+      clone.style.width='210mm';
+      clone.style.height='296mm';
+      clone.style.minHeight='296mm';
+      clone.style.maxHeight='296mm';
+      clone.style.overflow='hidden';
+      clone.style.margin='0';
+      document.body.appendChild(clone);
+      let pdfBlob;
+      try{
+        pdfBlob=await html2pdf().set(opt).from(clone).outputPdf('blob');
+      } finally {
+        clone.remove();
+      }
       var generatedPdfBlob=pdfBlob;
     } finally {
       imgs.forEach((img,i)=>img.setAttribute('src',originals[i]||''));
