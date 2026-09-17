@@ -8,7 +8,7 @@ html,body{margin:0!important;padding:0!important;width:210mm!important;height:29
 .footer{left:12mm;right:12mm}.noPrint{display:none!important}
 }
 .text-size-control{display:flex;align-items:center;gap:7px;margin:5px 0 7px}.text-size-control label{margin:0 auto 0 0;font-size:11px;color:var(--muted);font-weight:600}.sizebtn{width:28px;height:26px;border:1px solid #cfd9df;background:#fff;border-radius:5px;cursor:pointer;font-size:16px;line-height:1}.text-size-control span{min-width:42px;text-align:center;font-size:11px;color:var(--ink)}
-.watermark{position:absolute;left:50%;top:calc(54%);transform:translate(-50%,-50%);width:520px;height:520px;object-fit:contain;opacity:0.5;z-index:0;pointer-events:none;user-select:none}.page>*:not(.watermark){position:relative;z-index:1}@media print{.watermark{width:138mm;height:138mm;opacity:0.9}}
+.watermark{position:absolute;left:50%;top:calc(54% + 3mm);transform:translate(-50%,-50%);width:520px;height:520px;object-fit:contain;opacity:0.5;z-index:0;pointer-events:none;user-select:none}.page>*:not(.watermark){position:relative;z-index:1}@media print{.watermark{width:138mm;height:138mm;opacity:0.9}}
 
 /* Keep bottom elements pinned to the A4 page */
 .page > .footer{
@@ -62,7 +62,7 @@ html,body{margin:0!important;padding:0!important;width:210mm!important;height:29
   .page > .watermark {
     position: absolute !important;
     left: 50% !important;
-    top: calc(54% + 0.5mm) !important;
+    top: calc(54% + 3mm) !important;
     transform: translate(-50%, -50%) !important;
     width: 520px !important;
     height: 520px !important;
@@ -244,7 +244,7 @@ async function buildQuotationPdfBlob(){
     if(grand) grand.style.setProperty('background-color','#6bb38f','important');
     /* Watermark: same requested position, 6 mm lower. */
     const wm=clone.querySelector('.watermark');
-    if(wm) wm.style.setProperty('top','calc(54% + 0.5mm)','important');
+    if(wm) wm.style.setProperty('top','calc(54% + 3mm)','important');
 
     await waitForImages(clone);
     await waitForPaint(450);
