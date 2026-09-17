@@ -62,7 +62,7 @@ html,body{margin:0!important;padding:0!important;width:210mm!important;height:29
   .page > .watermark {
     position: absolute !important;
     left: 50% !important;
-    top: calc(54%) !important;
+    top: calc(54% + 0.5mm) !important;
     transform: translate(-50%, -50%) !important;
     width: 520px !important;
     height: 520px !important;
@@ -244,7 +244,7 @@ async function buildQuotationPdfBlob(){
     if(grand) grand.style.setProperty('background-color','#6bb38f','important');
     /* Watermark: same requested position, 6 mm lower. */
     const wm=clone.querySelector('.watermark');
-    if(wm) wm.style.setProperty('top','calc(54%)','important');
+    if(wm) wm.style.setProperty('top','calc(54% + 0.5mm)','important');
 
     await waitForImages(clone);
     await waitForPaint(450);
