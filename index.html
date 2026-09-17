@@ -173,7 +173,7 @@ document.addEventListener('input',e=>{if(e.target.dataset.i!==undefined){let i=+
   addRow();
 };$('reset').onclick=()=>{if(confirm('Reset quotation data?')){document.querySelectorAll('.editor input:not([readonly])').forEach(x=>{if(x.type==='checkbox'){x.checked=x.dataset.col?defaultCols.has(x.dataset.col):true}else x.value=''});$('quoteNo').value=String(getSavedQuoteNo());$('validDays').value='15';termsFontSize=10;paymentFontSize=10;applyRichSizes();$('payment').innerHTML='Payment terms to be agreed with the client.';$('terms').innerHTML='1. This quotation is valid for the above mentioned period.<br>2. Prices are in QAR and exclusive of VAT (if applicable).<br>3. Any additional work or changes will be quoted separately.';rows=[];addRow();}};addRow();
 </script><script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 /* Google Drive PDF upload — uses the proven single-A4 capture method. */
 const DRIVE_UPLOAD_URL = 'https://script.google.com/macros/s/AKfycbxk5X59PuRz4_IgaLCcoA8EZDH9rve5-SsVUxo7gvxdsc_KnQ4nSP5F9jpYZHZdQlJg/exec';
