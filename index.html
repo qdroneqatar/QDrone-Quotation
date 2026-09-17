@@ -154,11 +154,10 @@ async function uploadCurrentQuotationToDrive(){
 
     const page=$('page');
     const opt={
-      margin:[0,0,0,0],
+      margin:0,
       filename:filename,
       image:{type:'jpeg',quality:0.98},
-      html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff',scrollX:0,scrollY:0},
-      pagebreak:{mode:['avoid-all','css','legacy']},
+      html2canvas:{scale:1.98,useCORS:true,backgroundColor:'#ffffff',scrollX:0,scrollY:0},
       jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
     };
 
@@ -181,24 +180,26 @@ async function uploadCurrentQuotationToDrive(){
         });
         img.src=dataUrl;
       }
-      const clone=page.cloneNode(true);
-      clone.style.position='fixed';
-      clone.style.left='-10000px';
-      clone.style.top='0';
-      clone.style.width='210mm';
-      clone.style.height='296mm';
-      clone.style.minHeight='296mm';
-      clone.style.maxHeight='296mm';
-      clone.style.overflow='hidden';
-      clone.style.margin='0';
-      document.body.appendChild(clone);
-      let pdfBlob;
-      try{
-        pdfBlob=await html2pdf().set(opt).from(clone).outputPdf('blob');
-      } finally {
-        clone.remove();
-      }
+      /* Capture the real quotation element. Force the chosen green colors so
+         html2canvas preserves them in the Drive PDF. */
+      const ths=[...page.querySelectorAll('.items th')];
+      const thBg=ths.map(x=>x.style.backgroundColor);
+      const grand=page.querySelector('.grand');
+      const grandBg=grand ? grand.style.backgroundColor : '';
+      ths.forEach(x=>x.style.setProperty('background-color','#7eb99c','important'));
+      if(grand) grand.style.setProperty('background-color','#6bb38f','important');
+
+      const pdfBlob=await html2pdf().set(opt).from(page).outputPdf('blob');
       var generatedPdfBlob=pdfBlob;
+
+      ths.forEach((x,i)=>{
+        if(thBg[i]) x.style.backgroundColor=thBg[i];
+        else x.style.removeProperty('background-color');
+      });
+      if(grand){
+        if(grandBg) grand.style.backgroundColor=grandBg;
+        else grand.style.removeProperty('background-color');
+      }
     } finally {
       imgs.forEach((img,i)=>img.setAttribute('src',originals[i]||''));
     }
