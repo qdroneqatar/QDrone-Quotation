@@ -130,64 +130,175 @@ document.querySelectorAll('.sizebtn').forEach(btn=>btn.addEventListener('click',
 function addRow(data={}){rows.push({description:data.description||'',qty:data.qty??1,item:data.item||'',duration:data.duration||'',rate:data.rate??'',discount:data.discount??'',unit:data.unit??''});renderEditor();update()}
 function renderEditor(){ $('rows').innerHTML=rows.map((r,i)=>`<div class="rowbox"><div><label>Description</label><input data-i="${i}" data-k="description" value="${esc(r.description)}"></div><div><label>Qty</label><input type="number" data-i="${i}" data-k="qty" value="${r.qty}"></div><div><label>Item</label><input data-i="${i}" data-k="item" value="${esc(r.item)}"></div><div><label>Duration</label><input data-i="${i}" data-k="duration" value="${esc(r.duration)}"></div><div><label>Rate</label><input type="number" data-i="${i}" data-k="rate" value="${r.rate}" placeholder="0.00"></div><div><label>Discount %</label><input type="number" data-i="${i}" data-k="discount" value="${r.discount}" placeholder="0.00"></div><div><label>Unit Price</label><input type="number" data-i="${i}" data-k="unit" value="${r.unit}" placeholder="0.00"></div><button class="danger" data-del="${i}">✕</button></div>`).join('');}
 function update(){let days=+$('validDays').value||0,vd=new Date(now);vd.setDate(vd.getDate()+days);const yy=String(now.getFullYear()).slice(-2);$('quoteYearSuffix').textContent='-'+yy;$('pQuoteNo').textContent='QDS-'+($('quoteNo').value||'')+'-'+yy;$('pDate').textContent=dateFmt(now);$('pValid').textContent=dateFmt(vd)+(days?` (${days} Days)`:'');$('pClient').textContent=$('clientName').value||'Client / Company Name';$('pClientCR').textContent='CR: '+($('clientCR').value||'—');$('pClientLocation').textContent=$('clientLocation').value||'—';$('pClientPhone').textContent=$('clientPhone').value||'—';$('pClientEmail').textContent=$('clientEmail').value||'—';$('clientCRLine').style.display=$('showClientCR').checked?'grid':'none';$('clientLocationLine').style.display=$('showClientLocation').checked?'grid':'none';$('clientPhoneLine').style.display=$('showClientPhone').checked?'grid':'none';$('clientEmailLine').style.display=$('showClientEmail').checked?'grid':'none';let active=['num','description',...cols.filter(([k])=>document.querySelector(`[data-col="${k}"]`).checked).map(x=>x[0])];let names={num:'#',description:'Description',...Object.fromEntries(cols)};$('thead').innerHTML=active.map(k=>`<th>${names[k]}</th>`).join('');let subtotal=0;$('tbody').innerHTML=rows.map((r,i)=>{let qty=+r.qty||0,rate=+r.rate||0,disc=+r.discount||0,unit=+r.unit||rate,amount=qty*unit*(1-disc/100);subtotal+=amount;let v={num:i+1,description:r.description||'—',qty:r.qty,item:r.item||'—',duration:r.duration||'—',rate:rate.toFixed(2),discount:disc.toFixed(2),unit:unit.toFixed(2),amount:amount.toFixed(2)};return `<tr>${active.map(k=>`<td>${esc(v[k])}</td>`).join('')}</tr>`}).join('');$('subtotal').textContent=subtotal.toLocaleString(undefined,{minimumFractionDigits:2});$('grand').textContent=subtotal.toLocaleString(undefined,{minimumFractionDigits:2});$('pTerms').innerHTML=$('terms').innerHTML;$('pPayment').innerHTML=$('payment').innerHTML;applyRichSizes();$('termsBox').style.display=$('showTerms').checked?'block':'none';$('paymentBox').style.display=$('showPayment').checked?'block':'none';}
-document.addEventListener('input',e=>{if(e.target.dataset.i!==undefined){let i=+e.target.dataset.i,k=e.target.dataset.k;rows[i][k]=e.target.type==='number'?(e.target.value===''?'':+e.target.value):e.target.value}update()});document.addEventListener('change',update);document.addEventListener('click',e=>{if(e.target.dataset.del!==undefined){rows.splice(+e.target.dataset.del,1);renderEditor();update()}});document.querySelectorAll('.rich-toolbar button').forEach(btn=>btn.addEventListener('mousedown',e=>{e.preventDefault();const ed=$(btn.dataset.rich);ed.focus();if(btn.dataset.cmd)document.execCommand(btn.dataset.cmd,false,null);if(btn.dataset.color)document.execCommand('foreColor',false,btn.dataset.color);update();}));$('addRow').onclick=()=>addRow();$('print').onclick=async()=>{
-  try{
-    const {blob}=await generateChromePdf();
-    const url=URL.createObjectURL(blob);
-    const w=window.open(url,'_blank');
-    if(!w) throw new Error('Popup blocked. Allow popups for this site.');
-    setTimeout(()=>URL.revokeObjectURL(url),120000);
-  }catch(err){
-    alert('PDF generation failed: '+err.message);
-  }
-}$('reset').onclick=()=>{if(confirm('Reset quotation data?')){document.querySelectorAll('.editor input:not([readonly])').forEach(x=>{if(x.type==='checkbox'){x.checked=x.dataset.col?defaultCols.has(x.dataset.col):true}else x.value=''});$('quoteNo').value=String(getSavedQuoteNo());$('validDays').value='15';termsFontSize=10;paymentFontSize=10;applyRichSizes();$('payment').innerHTML='Payment terms to be agreed with the client.';$('terms').innerHTML='1. This quotation is valid for the above mentioned period.<br>2. Prices are in QAR and exclusive of VAT (if applicable).<br>3. Any additional work or changes will be quoted separately.';rows=[];addRow();}};addRow();
-</script><script>
-const DRIVE_UPLOAD_URL='https://script.google.com/macros/s/AKfycbxk5X59PuRz4_IgaLCcoA8EZDH9rve5-SsVUxo7gvxdsc_KnQ4nSP5F9jpYZHZdQlJg/exec';
-const PDF_RENDERER_URL='PASTE_CLOUD_RUN_URL_HERE/pdf';
-
-function safeFilePart(v){return String(v||'Client').trim().replace(/[\\/:*?"<>|]+/g,'-').replace(/\s+/g,' ')}
-function currentPdfName(){
+document.addEventListener('input',e=>{if(e.target.dataset.i!==undefined){let i=+e.target.dataset.i,k=e.target.dataset.k;rows[i][k]=e.target.type==='number'?(e.target.value===''?'':+e.target.value):e.target.value}update()});document.addEventListener('change',update);document.addEventListener('click',e=>{if(e.target.dataset.del!==undefined){rows.splice(+e.target.dataset.del,1);renderEditor();update()}});document.querySelectorAll('.rich-toolbar button').forEach(btn=>btn.addEventListener('mousedown',e=>{e.preventDefault();const ed=$(btn.dataset.rich);ed.focus();if(btn.dataset.cmd)document.execCommand(btn.dataset.cmd,false,null);if(btn.dataset.color)document.execCommand('foreColor',false,btn.dataset.color);update();}));$('addRow').onclick=()=>addRow();$('print').onclick=()=>{
+  const oldTitle=document.title;
   const yy=String(now.getFullYear()).slice(-2);
-  return 'QDS-'+($('quoteNo').value||'')+'-'+yy+'-'+safeFilePart($('clientName').value)+'.pdf';
+  const ref='QDS-'+($('quoteNo').value||'')+'-'+yy;
+  const client=($('clientName').value||'Client').trim()
+    .replace(/[\\/:*?"<>|]+/g,'-')
+    .replace(/\s+/g,' ');
+  document.title=ref+'-'+client;
+  const current=parseInt($('quoteNo').value,10)||getSavedQuoteNo();
+  window.print();
+  document.title=oldTitle;
+
+  const next=current+1;
+  saveQuoteNo(next);
+
+  /* Prepare a completely new quotation after printing */
+  $('clientName').value='';
+  $('clientCR').value='';
+  $('clientLocation').value='';
+  $('clientPhone').value='';
+  $('clientEmail').value='';
+  $('quoteNo').value=String(next);
+  $('validDays').value='15';
+
+  document.querySelectorAll('[data-col]').forEach(x=>x.checked=defaultCols.has(x.dataset.col));
+  $('showClientCR').checked=true;
+  $('showClientLocation').checked=true;
+  $('showClientPhone').checked=true;
+  $('showClientEmail').checked=true;
+  $('showTerms').checked=true;
+  $('showPayment').checked=true;
+
+  termsFontSize=10;
+  paymentFontSize=10;
+  applyRichSizes();
+
+  $('terms').innerHTML='1. This quotation is valid for the above mentioned period.<br>2. Prices are in QAR and exclusive of VAT (if applicable).<br>3. Any additional work or changes will be quoted separately.';
+  $('payment').innerHTML='Payment terms to be agreed with the client.';
+
+  rows=[];
+  addRow();
+};$('reset').onclick=()=>{if(confirm('Reset quotation data?')){document.querySelectorAll('.editor input:not([readonly])').forEach(x=>{if(x.type==='checkbox'){x.checked=x.dataset.col?defaultCols.has(x.dataset.col):true}else x.value=''});$('quoteNo').value=String(getSavedQuoteNo());$('validDays').value='15';termsFontSize=10;paymentFontSize=10;applyRichSizes();$('payment').innerHTML='Payment terms to be agreed with the client.';$('terms').innerHTML='1. This quotation is valid for the above mentioned period.<br>2. Prices are in QAR and exclusive of VAT (if applicable).<br>3. Any additional work or changes will be quoted separately.';rows=[];addRow();}};addRow();
+</script><script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+/* Paste your deployed Google Apps Script /exec URL here */
+const DRIVE_UPLOAD_URL = 'https://script.google.com/macros/s/AKfycbxk5X59PuRz4_IgaLCcoA8EZDH9rve5-SsVUxo7gvxdsc_KnQ4nSP5F9jpYZHZdQlJg/exec';
+
+function safeFilePart(v){
+  return String(v||'Client').trim()
+    .replace(/[\\/:*?"<>|]+/g,'-')
+    .replace(/\s+/g,' ');
 }
-async function dataUrlFor(src){
-  const r=await fetch(src,{cache:'no-store'}); if(!r.ok) throw new Error('Could not load '+src);
-  const b=await r.blob(); return await new Promise((ok,no)=>{const f=new FileReader();f.onload=()=>ok(f.result);f.onerror=no;f.readAsDataURL(b)});
-}
-async function buildPrintSnapshot(){
-  update();
-  const clone=document.documentElement.cloneNode(true);
-  const liveImgs=[...document.querySelectorAll('img')];
-  const cloneImgs=[...clone.querySelectorAll('img')];
-  for(let i=0;i<liveImgs.length;i++){
-    const src=liveImgs[i].src;
-    if(src && !src.startsWith('data:')) cloneImgs[i].setAttribute('src',await dataUrlFor(src));
-  }
-  clone.querySelectorAll('script').forEach(x=>x.remove());
-  return '<!doctype html>'+clone.outerHTML;
-}
-async function generateChromePdf(){
-  if(PDF_RENDERER_URL.includes('PASTE_CLOUD_RUN')) throw new Error('Cloud Run renderer URL is not configured yet.');
-  const html=await buildPrintSnapshot();
-  const controller=new AbortController(); const timer=setTimeout(()=>controller.abort(),45000);
-  try{
-    const r=await fetch(PDF_RENDERER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({html}),signal:controller.signal});
-    if(!r.ok){let t=await r.text();throw new Error('Renderer error '+r.status+': '+t.slice(0,180));}
-    return {blob:await r.blob(),filename:currentPdfName()};
-  }finally{clearTimeout(timer)}
-}
-async function blobToBase64(blob){return await new Promise((ok,no)=>{const f=new FileReader();f.onload=()=>ok(String(f.result).split(',')[1]);f.onerror=no;f.readAsDataURL(blob)})}
+
 async function uploadCurrentQuotationToDrive(){
-  const btn=$('uploadDrive'), old=btn.textContent; btn.disabled=true; btn.textContent='Generating PDF...';
+  if(DRIVE_UPLOAD_URL.includes('PASTE_YOUR')){
+    alert('First paste your Google Apps Script Web App URL into DRIVE_UPLOAD_URL.');
+    return;
+  }
+
+  const btn=$('uploadDrive');
+  const oldText=btn.textContent;
+  btn.disabled=true;
+  btn.textContent='Uploading...';
+
   try{
-    const {blob,filename}=await generateChromePdf();
-    btn.textContent='Uploading...';
-    const base64=await blobToBase64(blob);
-    const r=await fetch(DRIVE_UPLOAD_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({filename,mimeType:'application/pdf',base64})});
-    const result=await r.json(); if(!result.ok) throw new Error(result.error||'Drive upload failed');
+    const yy=String(now.getFullYear()).slice(-2);
+    const ref='QDS-'+($('quoteNo').value||'')+'-'+yy;
+    const client=safeFilePart($('clientName').value);
+    const filename=ref+'-'+client+'.pdf';
+
+    const page=$('page');
+    const opt={
+      margin:0,
+      filename:filename,
+      image:{type:'png',quality:1},
+      html2canvas:{scale:3,useCORS:true,allowTaint:false,backgroundColor:'#ffffff',scrollX:0,scrollY:0,logging:false},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
+    };
+
+    /* html2canvas cannot export a canvas if external images (logo/watermark)
+       are loaded without CORS. Temporarily convert local images to data URLs. */
+    const imgs=[...page.querySelectorAll('img')];
+    const originals=imgs.map(img=>img.getAttribute('src'));
+    try{
+      for(const img of imgs){
+        const src=img.getAttribute('src');
+        if(!src || src.startsWith('data:')) continue;
+        const r=await fetch(src,{cache:'no-store'});
+        if(!r.ok) throw new Error('Could not load image: '+src);
+        const b=await r.blob();
+        const dataUrl=await new Promise((resolve,reject)=>{
+          const fr=new FileReader();
+          fr.onload=()=>resolve(fr.result);
+          fr.onerror=reject;
+          fr.readAsDataURL(b);
+        });
+        img.src=dataUrl;
+      }
+      /* Make SVG sprite icons self-contained for html2canvas.
+         <use href="#..."> can disappear in generated PDFs in some browsers. */
+      const svgUses=[...page.querySelectorAll('svg use')];
+      const svgBackups=svgUses.map(use=>({
+        svg:use.closest('svg'),
+        html:use.closest('svg').innerHTML,
+        viewBox:use.closest('svg').getAttribute('viewBox')
+      }));
+      svgUses.forEach(use=>{
+        const svg=use.closest('svg');
+        const href=use.getAttribute('href')||use.getAttribute('xlink:href');
+        if(!href || !href.startsWith('#')) return;
+        const symbol=document.querySelector(href);
+        if(!symbol) return;
+        svg.setAttribute('viewBox',symbol.getAttribute('viewBox')||'0 0 24 24');
+        svg.innerHTML=symbol.innerHTML;
+      });
+
+      /* Capture the real quotation element. Force the chosen green colors so
+         html2canvas preserves them in the Drive PDF. */
+      const ths=[...page.querySelectorAll('.items th')];
+      const thBg=ths.map(x=>x.style.backgroundColor);
+      const grand=page.querySelector('.grand');
+      const grandBg=grand ? grand.style.backgroundColor : '';
+      ths.forEach(x=>x.style.setProperty('background-color','#7eb99c','important'));
+      if(grand) grand.style.setProperty('background-color','#6bb38f','important');
+
+      const pdfBlob=await html2pdf().set(opt).from(page).outputPdf('blob');
+      var generatedPdfBlob=pdfBlob;
+
+      ths.forEach((x,i)=>{
+        if(thBg[i]) x.style.backgroundColor=thBg[i];
+        else x.style.removeProperty('background-color');
+      });
+      if(grand){
+        if(grandBg) grand.style.backgroundColor=grandBg;
+        else grand.style.removeProperty('background-color');
+      }
+      svgBackups.forEach(b=>{
+        b.svg.innerHTML=b.html;
+        if(b.viewBox) b.svg.setAttribute('viewBox',b.viewBox);
+        else b.svg.removeAttribute('viewBox');
+      });
+    } finally {
+      imgs.forEach((img,i)=>img.setAttribute('src',originals[i]||''));
+    }
+    const pdfBlob=generatedPdfBlob;
+    const base64=await new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=()=>resolve(String(reader.result).split(',')[1]);
+      reader.onerror=reject;
+      reader.readAsDataURL(pdfBlob);
+    });
+
+    const response=await fetch(DRIVE_UPLOAD_URL,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({filename:filename,mimeType:'application/pdf',base64:base64})
+    });
+
+    const result=await response.json();
+    if(!result.ok) throw new Error(result.error||'Upload failed');
+
     alert('Saved to Google Drive:\n'+filename);
-  }catch(err){alert('Upload failed: '+err.message)}
-  finally{btn.disabled=false;btn.textContent=old}
+  }catch(err){
+    console.error(err);
+    alert('Google Drive upload failed: '+err.message);
+  }finally{
+    btn.disabled=false;
+    btn.textContent=oldText;
+  }
 }
 $('uploadDrive').onclick=uploadCurrentQuotationToDrive;
 </script>
