@@ -37,6 +37,10 @@ html,body{margin:0!important;padding:0!important;width:210mm!important;height:29
     bottom:19mm !important;
   }
 }
+
+.quote-edit-btn{margin-left:5px;width:25px;height:25px;padding:0;border:1px solid #b8c8bf;border-radius:5px;background:#fff;color:#4f8068;cursor:pointer;font-size:14px;line-height:23px;text-align:center;vertical-align:middle}
+.quote-edit-btn:hover{background:#eef7f2}
+.quote-edit-btn.active{background:#6bb38f;color:#fff;border-color:#6bb38f}
 </style>
 <style id="print-match-fix">
 @media print {
@@ -98,7 +102,7 @@ html,body{margin:0!important;padding:0!important;width:210mm!important;height:29
 <div><label>Phone</label><div style='display:grid;grid-template-columns:1fr auto;gap:7px;align-items:center'><input id='clientPhone' placeholder='+974 ...'><label class='chip' style='margin:0;font-weight:500'><input type='checkbox' id='showClientPhone' checked> Show</label></div></div>
 <div><label>Email</label><div style='display:grid;grid-template-columns:1fr auto;gap:7px;align-items:center'><input id='clientEmail' placeholder='client@company.com'><label class='chip' style='margin:0;font-weight:500'><input type='checkbox' id='showClientEmail' checked> Show</label></div></div>
 </div></div>
-<div class='card'><h3>Quotation Details</h3><div class='grid2'><div><label>Quotation Number</label><div style='display:flex'><span style='padding:9px;background:#edf1f3;border:1px solid #cfd9df;border-right:0;border-radius:6px 0 0 6px'>QDS-</span><input id='quoteNo' value='' readonly style='border-radius:0'><span id='quoteYearSuffix' style='padding:9px;background:#edf1f3;border:1px solid #cfd9df;border-left:0;border-radius:0 6px 6px 0'>-26</span></div></div><div><label>Date</label><input id='quoteDate' readonly></div><div><label>Validity (Days)</label><input id='validDays' type='number' value='15' min='1'></div></div></div>
+<div class='card'><h3>Quotation Details</h3><div class='grid2'><div><label>Quotation Number</label><div style='display:flex'><span style='padding:9px;background:#edf1f3;border:1px solid #cfd9df;border-right:0;border-radius:6px 0 0 6px'>QDS-</span><input id='quoteNo' value='' readonly style='border-radius:0'><button type="button" id="editQuoteRef" class="quote-edit-btn" title="Enter quotation reference manually" aria-label="Edit quotation reference">✎</button><span id='quoteYearSuffix' style='padding:9px;background:#edf1f3;border:1px solid #cfd9df;border-left:0;border-radius:0 6px 6px 0'>-26</span></div></div><div><label>Date</label><input id='quoteDate' readonly></div><div><label>Validity (Days)</label><input id='validDays' type='number' value='15' min='1'></div></div></div>
 <div class='card'><h3>Table Columns</h3><div class='checks' id='checks'></div></div>
 <div class='card'><h3>Items / Services</h3><div id='rows'></div><button class='add' id='addRow'>+ Add Row</button></div>
 <div class='card'><div class='toggleline'><h3 style='margin:0'>Terms & Conditions</h3><input type='checkbox' id='showTerms' checked></div><div class='text-size-control'><label>Preview Text Size</label><button type='button' class='sizebtn' data-size-target='terms' data-step='-1'>−</button><span id='termsSizeValue'>10 px</span><button type='button' class='sizebtn' data-size-target='terms' data-step='1'>+</button></div><div class='rich-toolbar'><button type='button' class='boldbtn' data-rich='terms' data-cmd='bold' title='Bold'>B</button><button type='button' class='colorbtn bluebtn' data-rich='terms' data-color='#1565c0' title='Blue text'>A</button><button type='button' class='colorbtn redbtn' data-rich='terms' data-color='#c62828' title='Red text'>A</button><button type='button' class='colorbtn greenbtn' data-rich='terms' data-color='#0b7b50' title='Green text'>A</button><button type='button' class='colorbtn brownbt' data-rich='terms' data-color='#795548' title='Brown text'>A</button><button type='button' class='blackbtn' data-rich='terms' data-color='#1a252d' title='Black text'>A</button></div><div id='terms' class='rich-editor' contenteditable='true'>1. This quotation is valid for the above mentioned period.<br>2. Prices are in QAR and exclusive of VAT (if applicable).<br>3. Any additional work or changes will be quoted separately.</div><div class='format-hint'>Select text, then use B or a color button.</div><div class='toggleline'><h3 style='margin:0'>Payment Terms</h3><input type='checkbox' id='showPayment' checked></div><div class='text-size-control'><label>Preview Text Size</label><button type='button' class='sizebtn' data-size-target='payment' data-step='-1'>−</button><span id='paymentSizeValue'>10 px</span><button type='button' class='sizebtn' data-size-target='payment' data-step='1'>+</button></div><div class='rich-toolbar'><button type='button' class='boldbtn' data-rich='payment' data-cmd='bold' title='Bold'>B</button><button type='button' class='colorbtn bluebtn' data-rich='payment' data-color='#1565c0' title='Blue text'>A</button><button type='button' class='colorbtn redbtn' data-rich='payment' data-color='#c62828' title='Red text'>A</button><button type='button' class='colorbtn greenbtn' data-rich='payment' data-color='#0b7b50' title='Green text'>A</button><button type='button' class='colorbtn brownbt' data-rich='payment' data-color='#795548' title='Brown text'>A</button><button type='button' class='blackbtn' data-rich='payment' data-color='#1a252d' title='Black text'>A</button></div><div id='payment' class='rich-editor' contenteditable='true'>Payment terms to be agreed with the client.</div><div class='format-hint'>Select text, then use B or a color button.</div></div>
@@ -110,6 +114,7 @@ html,body{margin:0!important;padding:0!important;width:210mm!important;height:29
 <script>
 const cols=[['qty','Qty'],['area','Surface / m²'],['item','Item'],['duration','Duration'],['rate','Rate (QAR)'],['discount','Discount (%)'],['unit','Unit Price (QAR)'],['amount','Amount Total (QAR)']];let rows=[];const $=id=>document.getElementById(id);function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}function dateFmt(d){return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}const now=new Date();$('quoteDate').value=dateFmt(now);
 let sharedQuoteLoaded=false;
+let manualQuoteReference=false;
 $('quoteNo').value='';
 const defaultCols=new Set(['qty','unit','amount']);cols.forEach(([k,l])=>$('checks').insertAdjacentHTML('beforeend',`<label class="chip"><input type="checkbox" data-col="${k}" ${defaultCols.has(k)?'checked':''}> ${l}</label>`));
 let termsFontSize=10,paymentFontSize=10;
@@ -179,6 +184,20 @@ const DRIVE_UPLOAD_URL = 'https://script.google.com/macros/s/AKfycbxk5X59PuRz4_I
 
 /* Shared quotation reference for every browser/device.
    JSONP is used because the quotation is hosted on GitHub Pages and Apps Script is cross-origin. */
+$('editQuoteRef').addEventListener('click',()=>{
+  manualQuoteReference=!manualQuoteReference;
+  $('quoteNo').readOnly=!manualQuoteReference;
+  $('editQuoteRef').classList.toggle('active',manualQuoteReference);
+  $('editQuoteRef').title=manualQuoteReference?'Return to automatic shared reference':'Enter quotation reference manually';
+  if(manualQuoteReference){
+    $('quoteNo').focus();
+    $('quoteNo').select();
+  }else{
+    loadSharedQuotationReference();
+  }
+});
+$('quoteNo').addEventListener('input',()=>update());
+
 function loadSharedQuotationReference(){
   return new Promise((resolve)=>{
     const cb='qdroneRef_'+Date.now()+'_'+Math.floor(Math.random()*100000);
@@ -194,7 +213,7 @@ function loadSharedQuotationReference(){
     const timer=setTimeout(()=>finish(false),12000);
     window[cb]=(data)=>{
       if(data&&data.ok&&Number.isFinite(Number(data.next))&&Number(data.next)>=1001){
-        $('quoteNo').value=String(Number(data.next));
+        if(!manualQuoteReference) $('quoteNo').value=String(Number(data.next));
         sharedQuoteLoaded=true;
         update();
         finish(true);
