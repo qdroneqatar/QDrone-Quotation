@@ -204,8 +204,8 @@ async function uploadCurrentQuotationToDrive(){
     const opt={
       margin:0,
       filename:filename,
-      image:{type:'png',quality:1},
-      html2canvas:{scale:3,useCORS:true,allowTaint:false,backgroundColor:'#ffffff',scrollX:0,scrollY:0,logging:false},
+      image:{type:'jpeg',quality:0.94},
+      html2canvas:{scale:2,useCORS:true,allowTaint:false,backgroundColor:'#ffffff',scrollX:0,scrollY:0,logging:false},
       jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
     };
 
@@ -282,11 +282,19 @@ async function uploadCurrentQuotationToDrive(){
       reader.readAsDataURL(pdfBlob);
     });
 
-    const response=await fetch(DRIVE_UPLOAD_URL,{
-      method:'POST',
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body:JSON.stringify({filename:filename,mimeType:'application/pdf',base64:base64})
-    });
+    const controller=new AbortController();
+    const uploadTimeout=setTimeout(()=>controller.abort(),30000);
+    let response;
+    try{
+      response=await fetch(DRIVE_UPLOAD_URL,{
+        method:'POST',
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body:JSON.stringify({filename:filename,mimeType:'application/pdf',base64:base64}),
+        signal:controller.signal
+      });
+    } finally {
+      clearTimeout(uploadTimeout);
+    }
 
     const result=await response.json();
     if(!result.ok) throw new Error(result.error||'Upload failed');
@@ -294,7 +302,7 @@ async function uploadCurrentQuotationToDrive(){
     alert('Saved to Google Drive:\n'+filename);
   }catch(err){
     console.error(err);
-    alert('Google Drive upload failed: '+err.message);
+    alert(err.name==='AbortError' ? 'Upload timed out after 30 seconds. Please try again.' : 'Google Drive upload failed: '+err.message);
   }finally{
     btn.disabled=false;
     btn.textContent=oldText;
