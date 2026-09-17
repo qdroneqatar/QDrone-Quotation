@@ -8,7 +8,7 @@ html,body{margin:0!important;padding:0!important;width:210mm!important;height:29
 .footer{left:12mm;right:12mm}.noPrint{display:none!important}
 }
 .text-size-control{display:flex;align-items:center;gap:7px;margin:5px 0 7px}.text-size-control label{margin:0 auto 0 0;font-size:11px;color:var(--muted);font-weight:600}.sizebtn{width:28px;height:26px;border:1px solid #cfd9df;background:#fff;border-radius:5px;cursor:pointer;font-size:16px;line-height:1}.text-size-control span{min-width:42px;text-align:center;font-size:11px;color:var(--ink)}
-.watermark{position:absolute;left:50%;top:54%;transform:translate(-50%,-50%);width:520px;height:520px;object-fit:contain;opacity:0.5;z-index:0;pointer-events:none;user-select:none}.page>*:not(.watermark){position:relative;z-index:1}@media print{.watermark{width:138mm;height:138mm;opacity:0.9}}
+.watermark{position:absolute;left:50%;top:calc(54% + mm);transform:translate(-50%,-50%);width:520px;height:520px;object-fit:contain;opacity:0.5;z-index:0;pointer-events:none;user-select:none}.page>*:not(.watermark){position:relative;z-index:1}@media print{.watermark{width:138mm;height:138mm;opacity:0.9}}
 
 /* Keep bottom elements pinned to the A4 page */
 .page > .footer{
@@ -110,6 +110,7 @@ html,body{margin:0!important;padding:0!important;width:210mm!important;height:29
 <script>
 const cols=[['qty','Qty'],['area','Surface / m²'],['item','Item'],['duration','Duration'],['rate','Rate (QAR)'],['discount','Discount (%)'],['unit','Unit Price (QAR)'],['amount','Amount Total (QAR)']];let rows=[];const $=id=>document.getElementById(id);function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}function dateFmt(d){return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}const now=new Date();$('quoteDate').value=dateFmt(now);
 const QUOTE_COUNTER_KEY='qdroneQuotationCounter';
+let sharedQuoteLoaded=false;
 function getSavedQuoteNo(){const saved=parseInt(localStorage.getItem(QUOTE_COUNTER_KEY),10);return Number.isFinite(saved)&&saved>=1001?saved:1001}
 function saveQuoteNo(n){localStorage.setItem(QUOTE_COUNTER_KEY,String(n))}
 $('quoteNo').value=String(getSavedQuoteNo());
@@ -138,49 +139,40 @@ document.addEventListener('input',e=>{if(e.target.dataset.i!==undefined){let i=+
   const oldTitle=document.title;
   const yy=String(now.getFullYear()).slice(-2);
   const ref='QDS-'+($('quoteNo').value||'')+'-'+yy;
-  const client=($('clientName').value||'Client').trim()
-    .replace(/[\\/:*?"<>|]+/g,'-')
-    .replace(/\s+/g,' ');
+  const client=($('clientName').value||'Client').trim().replace(/[\/:*?"<>|]+/g,'-').replace(/\s+/g,' ');
   document.title=ref+'-'+client;
-  const current=parseInt($('quoteNo').value,10)||getSavedQuoteNo();
   window.print();
   document.title=oldTitle;
-
-  const next=current+1;
-  saveQuoteNo(next);
-
-  /* Prepare a completely new quotation after printing */
-  $('clientName').value='';
-  $('clientCR').value='';
-  $('clientLocation').value='';
-  $('clientPhone').value='';
-  $('clientEmail').value='';
-  $('quoteNo').value=String(next);
-  $('validDays').value='15';
-
-  document.querySelectorAll('[data-col]').forEach(x=>x.checked=defaultCols.has(x.dataset.col));
-  $('showClientCR').checked=true;
-  $('showClientLocation').checked=true;
-  $('showClientPhone').checked=true;
-  $('showClientEmail').checked=true;
-  $('showTerms').checked=true;
-  $('showPayment').checked=true;
-
-  termsFontSize=10;
-  paymentFontSize=10;
-  applyRichSizes();
-
-  $('terms').innerHTML='1. This quotation is valid for the above mentioned period.<br>2. Prices are in QAR and exclusive of VAT (if applicable).<br>3. Any additional work or changes will be quoted separately.';
-  $('payment').innerHTML='Payment terms to be agreed with the client.';
-
-  rows=[];
-  addRow();
-};$('reset').onclick=()=>{if(confirm('Reset quotation data?')){document.querySelectorAll('.editor input:not([readonly])').forEach(x=>{if(x.type==='checkbox'){x.checked=x.dataset.col?defaultCols.has(x.dataset.col):true}else x.value=''});$('quoteNo').value=String(getSavedQuoteNo());$('validDays').value='15';termsFontSize=10;paymentFontSize=10;applyRichSizes();$('payment').innerHTML='Payment terms to be agreed with the client.';$('terms').innerHTML='1. This quotation is valid for the above mentioned period.<br>2. Prices are in QAR and exclusive of VAT (if applicable).<br>3. Any additional work or changes will be quoted separately.';rows=[];addRow();}};addRow();
+};$('reset').onclick=()=>{if(confirm('Reset quotation data?')){document.querySelectorAll('.editor input:not([readonly])').forEach(x=>{if(x.type==='checkbox'){x.checked=x.dataset.col?defaultCols.has(x.dataset.col):true}else x.value=''});$('validDays').value='15';termsFontSize=10;paymentFontSize=10;applyRichSizes();$('payment').innerHTML='Payment terms to be agreed with the client.';$('terms').innerHTML='1. This quotation is valid for the above mentioned period.<br>2. Prices are in QAR and exclusive of VAT (if applicable).<br>3. Any additional work or changes will be quoted separately.';rows=[];addRow();}};addRow();
 </script><script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 /* Google Drive PDF upload — uses the proven single-A4 capture method. */
 const DRIVE_UPLOAD_URL = 'https://script.google.com/macros/s/AKfycbxk5X59PuRz4_IgaLCcoA8EZDH9rve5-SsVUxo7gvxdsc_KnQ4nSP5F9jpYZHZdQlJg/exec';
+
+/* Shared quotation reference for every browser/device. */
+const SHARED_REF_CALLBACK='qdroneSharedRefCallback';
+function loadSharedQuotationReference(){
+  return new Promise((resolve)=>{
+    const cb=SHARED_REF_CALLBACK+'_'+Date.now();
+    let script=document.createElement('script');
+    let timer=setTimeout(()=>{cleanup();resolve(false)},10000);
+    function cleanup(){clearTimeout(timer);try{delete window[cb]}catch(e){};script.remove()}
+    window[cb]=function(data){
+      if(data&&data.ok&&Number(data.next)>=1001){
+        $('quoteNo').value=String(data.next); sharedQuoteLoaded=true; update(); cleanup(); resolve(true);
+      }else{cleanup();resolve(false)}
+    };
+    script.src=DRIVE_UPLOAD_URL+'?action=nextRef&callback='+encodeURIComponent(cb)+'&_='+Date.now();
+    script.onerror=()=>{cleanup();resolve(false)};
+    document.head.appendChild(script);
+  });
+}
+async function reserveSharedQuotationReference(expected){
+  /* no-cors POST: Apps Script atomically advances only if expected matches current */
+  await fetch(DRIVE_UPLOAD_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'reserveRef',expected:Number(expected)})});
+}
+
 
 function safeFilePart(v){
   return String(v||'Client').trim().replace(/[\\/:*?"<>|]+/g,'-').replace(/\s+/g,' ');
@@ -285,15 +277,21 @@ async function uploadCurrentQuotationToDrive(){
       mode:'no-cors',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
       body:JSON.stringify({
+        action:'uploadQuotation',
+        expected:Number($('quoteNo').value),
         filename:filename,
         mimeType:'application/pdf',
         base64:base64
       })
     });
-    alert('PDF upload request sent to Google Drive:\n'+filename);
+    await new Promise(r=>setTimeout(r,900));
+    await loadSharedQuotationReference();
+    saveQuoteNo(Number($('quoteNo').value)||getSavedQuoteNo());
+    alert('PDF upload request sent to Google Drive:\n'+filename+'\nNext shared reference: QDS-'+$('quoteNo').value+'-'+yy);
   }catch(err){console.error(err);alert('Google Drive upload failed: '+err.message);}
   finally{btn.disabled=false;btn.textContent=oldText;}
 }
 $('uploadDrive').onclick=uploadCurrentQuotationToDrive;
+loadSharedQuotationReference();
 </script>
 </body></html>
