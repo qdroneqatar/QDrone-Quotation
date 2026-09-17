@@ -8,7 +8,7 @@ html,body{margin:0!important;padding:0!important;width:210mm!important;height:29
 .footer{left:12mm;right:12mm}.noPrint{display:none!important}
 }
 .text-size-control{display:flex;align-items:center;gap:7px;margin:5px 0 7px}.text-size-control label{margin:0 auto 0 0;font-size:11px;color:var(--muted);font-weight:600}.sizebtn{width:28px;height:26px;border:1px solid #cfd9df;background:#fff;border-radius:5px;cursor:pointer;font-size:16px;line-height:1}.text-size-control span{min-width:42px;text-align:center;font-size:11px;color:var(--ink)}
-.watermark{position:absolute;left:50%;top:calc(54% + 3mm);transform:translate(-50%,-50%);width:520px;height:520px;object-fit:contain;opacity:0.5;z-index:0;pointer-events:none;user-select:none}.page>*:not(.watermark){position:relative;z-index:1}@media print{.watermark{width:138mm;height:138mm;opacity:0.9}}
+.watermark{position:absolute;left:50%;top:calc(54% + mm);transform:translate(-50%,-50%);width:520px;height:520px;object-fit:contain;opacity:0.5;z-index:0;pointer-events:none;user-select:none}.page>*:not(.watermark){position:relative;z-index:1}@media print{.watermark{width:138mm;height:138mm;opacity:0.9}}
 
 /* Keep bottom elements pinned to the A4 page */
 .page > .footer{
@@ -132,14 +132,30 @@ let basis=area>0?area:(item>0?item:qty);
 let amount=basis*unit*(1-disc/100);
 subtotal+=amount;
 let v={num:i+1,description:r.description||'—',qty:r.qty,area:area?area.toFixed(2):'0.00',item:item?item:'0',duration:r.duration||'—',rate:rate.toFixed(2),discount:disc.toFixed(2),unit:unit.toFixed(2),amount:amount.toFixed(2)};return `<tr>${active.map(k=>`<td>${esc(v[k])}</td>`).join('')}</tr>`}).join('');$('subtotal').textContent=subtotal.toLocaleString(undefined,{minimumFractionDigits:2});$('grand').textContent=subtotal.toLocaleString(undefined,{minimumFractionDigits:2});$('pTerms').innerHTML=$('terms').innerHTML;$('pPayment').innerHTML=$('payment').innerHTML;applyRichSizes();$('termsBox').style.display=$('showTerms').checked?'block':'none';$('paymentBox').style.display=$('showPayment').checked?'block':'none';}
-document.addEventListener('input',e=>{if(e.target.dataset.i!==undefined){let i=+e.target.dataset.i,k=e.target.dataset.k;rows[i][k]=e.target.type==='number'?(e.target.value===''?'':+e.target.value):e.target.value}update()});document.addEventListener('change',update);document.addEventListener('click',e=>{if(e.target.dataset.del!==undefined){rows.splice(+e.target.dataset.del,1);renderEditor();update()}});document.querySelectorAll('.rich-toolbar button').forEach(btn=>btn.addEventListener('mousedown',e=>{e.preventDefault();const ed=$(btn.dataset.rich);ed.focus();if(btn.dataset.cmd)document.execCommand(btn.dataset.cmd,false,null);if(btn.dataset.color)document.execCommand('foreColor',false,btn.dataset.color);update();}));$('addRow').onclick=()=>addRow();$('print').onclick=()=>{
+document.addEventListener('input',e=>{if(e.target.dataset.i!==undefined){let i=+e.target.dataset.i,k=e.target.dataset.k;rows[i][k]=e.target.type==='number'?(e.target.value===''?'':+e.target.value):e.target.value}update()});document.addEventListener('change',update);document.addEventListener('click',e=>{if(e.target.dataset.del!==undefined){rows.splice(+e.target.dataset.del,1);renderEditor();update()}});document.querySelectorAll('.rich-toolbar button').forEach(btn=>btn.addEventListener('mousedown',e=>{e.preventDefault();const ed=$(btn.dataset.rich);ed.focus();if(btn.dataset.cmd)document.execCommand(btn.dataset.cmd,false,null);if(btn.dataset.color)document.execCommand('foreColor',false,btn.dataset.color);update();}));$('addRow').onclick=()=>addRow();$('print').onclick=async()=>{
+  if(!sharedQuoteLoaded||!Number.isFinite(Number($('quoteNo').value))){
+    alert('Shared quotation reference is still loading. Please wait a moment and try again.');
+    return;
+  }
+  const used=Number($('quoteNo').value);
   const oldTitle=document.title;
   const yy=String(now.getFullYear()).slice(-2);
-  const ref='QDS-'+($('quoteNo').value||'')+'-'+yy;
+  const ref='QDS-'+used+'-'+yy;
   const client=($('clientName').value||'Client').trim().replace(/[\/:*?"<>|]+/g,'-').replace(/\s+/g,' ');
   document.title=ref+'-'+client;
   window.print();
   document.title=oldTitle;
+  try{
+    await advanceSharedReference(used);
+    const advanced=await waitForNextReference(used);
+    if(!advanced) throw new Error('The shared reference did not advance.');
+    const nextRef=$('quoteNo').value;
+    clearQuotationForNext();
+    $('quoteNo').value=nextRef; update();
+  }catch(err){
+    console.error(err);
+    alert('PDF printing finished, but the shared quotation number could not be advanced automatically. Refresh the page before creating another quotation.');
+  }
 };$('reset').onclick=()=>{if(confirm('Reset quotation data?')){document.querySelectorAll('.editor input:not([readonly])').forEach(x=>{if(x.type==='checkbox'){x.checked=x.dataset.col?defaultCols.has(x.dataset.col):true}else x.value=''});$('validDays').value='15';termsFontSize=10;paymentFontSize=10;applyRichSizes();$('payment').innerHTML='Payment terms to be agreed with the client.';$('terms').innerHTML='1. This quotation is valid for the above mentioned period.<br>2. Prices are in QAR and exclusive of VAT (if applicable).<br>3. Any additional work or changes will be quoted separately.';rows=[];addRow();}};addRow();
 </script><script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -148,30 +164,50 @@ document.addEventListener('input',e=>{if(e.target.dataset.i!==undefined){let i=+
 const DRIVE_UPLOAD_URL = 'https://script.google.com/macros/s/AKfycbxk5X59PuRz4_IgaLCcoA8EZDH9rve5-SsVUxo7gvxdsc_KnQ4nSP5F9jpYZHZdQlJg/exec';
 
 /* Shared quotation reference for every browser/device.
-   Apps Script doGet() returns normal JSON: {"ok":true,"next":1023}. */
-async function loadSharedQuotationReference(){
-  try{
-    const response=await fetch(DRIVE_UPLOAD_URL+'?_='+Date.now(),{
-      method:'GET',
-      cache:'no-store',
-      redirect:'follow'
-    });
-    if(!response.ok) throw new Error('Shared reference server returned HTTP '+response.status);
-    const data=await response.json();
-    if(!data || !data.ok || !Number.isFinite(Number(data.next)) || Number(data.next)<1001){
-      throw new Error('Invalid shared quotation reference.');
-    }
-    $('quoteNo').value=String(Number(data.next));
-    sharedQuoteLoaded=true;
-    update();
-    return true;
-  }catch(err){
-    sharedQuoteLoaded=false;
-    console.error('Shared quotation reference failed:',err);
-    $('quoteNo').value='';
-    update();
-    return false;
+   JSONP is used because the quotation is hosted on GitHub Pages and Apps Script is cross-origin. */
+function loadSharedQuotationReference(){
+  return new Promise((resolve)=>{
+    const cb='qdroneRef_'+Date.now()+'_'+Math.floor(Math.random()*100000);
+    const script=document.createElement('script');
+    let done=false;
+    const finish=(ok)=>{
+      if(done)return; done=true;
+      clearTimeout(timer);
+      try{delete window[cb]}catch(e){}
+      script.remove();
+      resolve(ok);
+    };
+    const timer=setTimeout(()=>finish(false),12000);
+    window[cb]=(data)=>{
+      if(data&&data.ok&&Number.isFinite(Number(data.next))&&Number(data.next)>=1001){
+        $('quoteNo').value=String(Number(data.next));
+        sharedQuoteLoaded=true;
+        update();
+        finish(true);
+      }else finish(false);
+    };
+    script.onerror=()=>finish(false);
+    script.src=DRIVE_UPLOAD_URL+'?action=nextRef&callback='+encodeURIComponent(cb)+'&_='+Date.now();
+    document.head.appendChild(script);
+  });
+}
+
+async function advanceSharedReference(expected){
+  await fetch(DRIVE_UPLOAD_URL,{
+    method:'POST',
+    mode:'no-cors',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify({action:'reserveRef',expected:Number(expected)})
+  });
+}
+
+async function waitForNextReference(used){
+  for(let attempt=0;attempt<10;attempt++){
+    await new Promise(r=>setTimeout(r,650));
+    const loaded=await loadSharedQuotationReference();
+    if(loaded&&Number($('quoteNo').value)>Number(used)) return true;
   }
+  return false;
 }
 
 function safeFilePart(v){
@@ -258,6 +294,16 @@ async function buildQuotationPdfBlob(){
     wrapper.remove();
   }
 }
+
+function clearQuotationForNext(){
+  ['clientName','clientCR','clientLocation','clientPhone','clientEmail'].forEach(id=>$(id).value='');
+  $('validDays').value='15';
+  termsFontSize=10; paymentFontSize=10; applyRichSizes();
+  $('payment').innerHTML='Payment terms to be agreed with the client.';
+  $('terms').innerHTML='1. This quotation is valid for the above mentioned period.<br>2. Prices are in QAR and exclusive of VAT (if applicable).<br>3. Any additional work or changes will be quoted separately.';
+  rows=[]; addRow(); update();
+}
+
 async function uploadCurrentQuotationToDrive(){
   const btn=$('uploadDrive'),oldText=btn.textContent;
   btn.disabled=true;btn.textContent='Uploading...';
@@ -288,20 +334,24 @@ async function uploadCurrentQuotationToDrive(){
         base64:base64
       })
     });
-    let advanced=false;
-    for(let attempt=0;attempt<8;attempt++){
-      await new Promise(r=>setTimeout(r,700));
-      const loaded=await loadSharedQuotationReference();
-      if(loaded && Number($('quoteNo').value)>usedQuoteNo){advanced=true;break;}
-    }
+    const advanced=await waitForNextReference(usedQuoteNo);
     if(!advanced){
       throw new Error('PDF request was sent, but the shared reference did not advance. Check Google Drive before retrying.');
     }
-    alert('PDF uploaded to Google Drive:\n'+filename+'\nNext shared reference: QDS-'+$('quoteNo').value+'-'+yy);
+    const nextRef=$('quoteNo').value;
+    clearQuotationForNext();
+    $('quoteNo').value=nextRef; update();
+    alert('PDF uploaded to Google Drive:\n'+filename+'\nNext shared reference: QDS-'+nextRef+'-'+yy);
   }catch(err){console.error(err);alert('Google Drive upload failed: '+err.message);}
   finally{btn.disabled=false;btn.textContent=oldText;}
 }
 $('uploadDrive').onclick=uploadCurrentQuotationToDrive;
-loadSharedQuotationReference();
+(async()=>{
+  const ok=await loadSharedQuotationReference();
+  if(!ok){
+    await new Promise(r=>setTimeout(r,1200));
+    await loadSharedQuotationReference();
+  }
+})();
 </script>
 </body></html>
